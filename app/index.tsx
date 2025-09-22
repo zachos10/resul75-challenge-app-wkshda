@@ -7,6 +7,7 @@ import { useChallengeData } from '../hooks/useChallengeData';
 import CalendarView from '../components/CalendarView';
 import DayDetailModal from '../components/DayDetailModal';
 import ProgressStats from '../components/ProgressStats';
+import IntegrationStatus from '../components/IntegrationStatus';
 import SimpleBottomSheet from '../components/BottomSheet';
 import Icon from '../components/Icon';
 
@@ -120,23 +121,16 @@ export default function MainScreen() {
         onClose={() => setShowSettings(false)}
       >
         <View style={styles.settingsContent}>
-          <Text style={styles.settingsTitle}>Settings</Text>
-          
-          <View style={styles.settingsSection}>
-            <Text style={styles.sectionTitle}>App Integrations</Text>
-            <Text style={styles.sectionText}>
-              YAZIO and STRAVA integrations are coming soon. For now, you can manually track your progress.
-            </Text>
-          </View>
+          <IntegrationStatus />
           
           <View style={styles.settingsSection}>
             <Text style={styles.sectionTitle}>About RESUL75</Text>
             <Text style={styles.sectionText}>
               Complete 5 daily tasks for 75 consecutive days:
-              {'\n'}• Progress Photo
-              {'\n'}• Water Intake (YAZIO)
-              {'\n'}• Healthy Diet (YAZIO)
-              {'\n'}• Workout (STRAVA)
+              {'\n'}• Progress Photo (Camera Integration ✅)
+              {'\n'}• Water Intake (YAZIO Integration 🔗)
+              {'\n'}• Healthy Diet (YAZIO Integration 🔗)
+              {'\n'}• Workout (STRAVA Integration 🔗)
               {'\n'}• No Alcohol
               {'\n'}• Weekly Challenge
             </Text>
@@ -205,6 +199,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.grey,
     lineHeight: 20,
+  },
+  boldText: {
+    fontWeight: '600',
+    color: colors.primary,
   },
   resetButton: {
     backgroundColor: colors.error,

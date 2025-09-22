@@ -34,7 +34,14 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you take progress photos for your RESUL75 challenge.",
+          "cameraPermission": "The app accesses your camera to let you take progress photos for your RESUL75 challenge."
+        }
+      ]
     ],
     "scheme": "natively",
     "experiments": {

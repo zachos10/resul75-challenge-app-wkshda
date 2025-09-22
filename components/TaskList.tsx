@@ -4,6 +4,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { colors } from '../styles/commonStyles';
 import { DailyTask } from '../types/challenge';
 import Icon from './Icon';
+import { integrationService } from '../services/integrationService';
+import { photoService } from '../services/photoService';
 
 interface TaskListProps {
   tasks: DailyTask[];
@@ -12,22 +14,145 @@ interface TaskListProps {
 }
 
 export default function TaskList({ tasks, onTaskToggle, day }: TaskListProps) {
-  const handleTaskPress = (task: DailyTask) => {
-    if (task.requiresApp) {
-      Alert.alert(
-        `${task.requiresApp.toUpperCase()} Integration`,
-        `This task requires ${task.requiresApp.toUpperCase()} app integration. For now, you can manually mark it as complete.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: task.completed ? 'Mark Incomplete' : 'Mark Complete',
-            onPress: () => onTaskToggle(task.id, !task.completed)
-          }
-        ]
-      );
+  const handleTaskPress = async (task: DailyTask) => {
+    console.log('Task pressed:', task.id);
+    
+    if (task.id === 'progress-photo') {
+      await handleProgressPhoto(task);
+    } else if (task.requiresApp === 'yazio') {
+      await handleYazioIntegration(task);
+    } else if (task.requiresApp === 'strava') {
+      await handleStravaIntegration(task);
     } else {
       onTaskToggle(task.id, !task.completed);
     }
+  };
+
+  const handleProgressPhoto = async (task: DailyTask) => {
+    try {
+      Alert.alert(
+        'Progress Photo',
+        'Take a new photo or choose from gallery?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: '📷 Camera', 
+            onPress: async () => {
+              const hasPermission = await photoService.requestCameraPermissions();
+              
+              if (!hasPermission) {
+                Alert.alert(
+                  'Camera Permission Required',
+                  'Please allow camera access to take progress photos.',
+                  [{ text: 'OK', style: 'default' }]
+                );
+                return;
+              }
+
+              console.log('Opening camera...');
+              const result = await photoService.takePhoto();
+
+              if (!result.canceled && result.assets && result.assets[0]) {
+                const photo = await photoService.saveProgressPhoto(
+                  day, 
+                  result.assets[0].uri, 
+                  'camera'
+                );
+                console.log('Photo taken and saved:', photo.id);
+                onTaskToggle(task.id, true);
+                Alert.alert('Success! 📸', 'Progress photo saved successfully!');
+              }
+            }
+          },
+          { 
+            text: '🖼️ Gallery', 
+            onPress: async () => {
+              const hasPermission = await photoService.requestMediaLibraryPermissions();
+              
+              if (!hasPermission) {
+                Alert.alert(
+                  'Gallery Permission Required',
+                  'Please allow gallery access to select progress photos.',
+                  [{ text: 'OK', style: 'default' }]
+                );
+                return;
+              }
+
+              console.log('Opening gallery...');
+              const result = await photoService.pickFromGallery();
+
+              if (!result.canceled && result.assets && result.assets[0]) {
+                const photo = await photoService.saveProgressPhoto(
+                  day, 
+                  result.assets[0].uri, 
+                  'gallery'
+                );
+                console.log('Photo selected and saved:', photo.id);
+                onTaskToggle(task.id, true);
+                Alert.alert('Success! 🖼️', 'Progress photo saved successfully!');
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error handling progress photo:', error);
+      Alert.alert('Error', 'Failed to access camera/gallery. Please try again.');
+    }
+  };
+
+  const handleYazioIntegration = async (task: DailyTask) => {
+    Alert.alert(
+      'YAZIO Integration',
+      'Track your nutrition and water intake with YAZIO',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Setup Info',
+          onPress: () => integrationService.showIntegrationInstructions('yazio')
+        },
+        { 
+          text: 'Open YAZIO',
+          onPress: async () => {
+            const result = await integrationService.connectYazio();
+            if (result.success) {
+              console.log('YAZIO opened successfully');
+            }
+          }
+        },
+        { 
+          text: task.completed ? 'Mark Incomplete' : 'Mark Complete',
+          onPress: () => onTaskToggle(task.id, !task.completed)
+        }
+      ]
+    );
+  };
+
+  const handleStravaIntegration = async (task: DailyTask) => {
+    Alert.alert(
+      'STRAVA Integration',
+      'Track your workouts with STRAVA',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Setup Info',
+          onPress: () => integrationService.showIntegrationInstructions('strava')
+        },
+        { 
+          text: 'Open STRAVA',
+          onPress: async () => {
+            const result = await integrationService.connectStrava();
+            if (result.success) {
+              console.log('STRAVA opened successfully');
+            }
+          }
+        },
+        { 
+          text: task.completed ? 'Mark Incomplete' : 'Mark Complete',
+          onPress: () => onTaskToggle(task.id, !task.completed)
+        }
+      ]
+    );
   };
 
   const getTaskIcon = (task: DailyTask) => {
@@ -76,6 +201,11 @@ export default function TaskList({ tasks, onTaskToggle, day }: TaskListProps) {
               {task.requiresApp && (
                 <Text style={styles.appBadge}>
                   {task.requiresApp.toUpperCase()}
+                </Text>
+              )}
+              {task.id === 'progress-photo' && (
+                <Text style={styles.cameraBadge}>
+                  📸 TAP TO TAKE PHOTO
                 </Text>
               )}
             </View>
@@ -151,6 +281,18 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
     alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  cameraBadge: {
+    fontSize: 12,
+    color: colors.success,
+    backgroundColor: colors.backgroundAlt,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    fontWeight: '600',
   },
   statusIcon: {
     marginLeft: 16,

@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'rea
 import { colors } from '../styles/commonStyles';
 import { DayProgress } from '../types/challenge';
 import TaskList from './TaskList';
+import ProgressPhotoGallery from './ProgressPhotoGallery';
 import Icon from './Icon';
 
 interface DayDetailModalProps {
@@ -68,6 +69,8 @@ export default function DayDetailModal({ visible, dayData, onClose, onTaskToggle
             onTaskToggle={onTaskToggle}
             day={dayData.day}
           />
+          
+          <ProgressPhotoGallery day={dayData.day} />
           
           {dayData.weeklyChallenge && (
             <View style={styles.weeklyChallenge}>
