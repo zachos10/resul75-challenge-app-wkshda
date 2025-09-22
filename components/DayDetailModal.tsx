@@ -12,72 +12,82 @@ interface DayDetailModalProps {
   dayData: DayProgress | null;
   onClose: () => void;
   onTaskToggle: (taskId: string, completed: boolean) => void;
+  onWeeklyChallengeToggle?: (completed: boolean) => void;
 }
 
-export default function DayDetailModal({ visible, dayData, onClose, onTaskToggle }: DayDetailModalProps) {
+export default function DayDetailModal({ 
+  visible, 
+  dayData, 
+  onClose, 
+  onTaskToggle, 
+  onWeeklyChallengeToggle 
+}: DayDetailModalProps) {
   if (!dayData) return null;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
   };
 
   const completedTasks = dayData.tasks.filter(task => task.completed).length;
-  const totalTasks = dayData.tasks.length;
+  const totalTasks = dayData.tasks.length + (dayData.weeklyChallenge ? 1 : 0);
+  const completedTotal = completedTasks + (dayData.weeklyChallenge?.completed ? 1 : 0);
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
     >
       <View style={styles.container}>
+        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Icon name="close" size={24} color={colors.primary} />
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Icon name="close" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
           
           <View style={styles.headerContent}>
             <Text style={styles.dayTitle}>Day {dayData.day}</Text>
             <Text style={styles.dateText}>{formatDate(dayData.date)}</Text>
-            
             <View style={styles.progressContainer}>
               <Text style={styles.progressText}>
-                {completedTasks}/{totalTasks} Tasks Completed
+                {completedTotal}/{totalTasks} Tasks Complete
               </Text>
-              <View style={styles.progressBar}>
-                <View 
-                  style={[
-                    styles.progressFill, 
-                    { width: `${(completedTasks / totalTasks) * 100}%` }
-                  ]} 
-                />
-              </View>
+              <Text style={styles.pointsText}>
+                {dayData.totalPoints} Points Earned
+              </Text>
             </View>
+          </View>
+          
+          <View style={styles.statusIndicator}>
+            <Icon 
+              name={dayData.allCompleted ? 'checkmark-circle' : 'ellipse-outline'} 
+              size={32} 
+              color={dayData.allCompleted ? colors.success : colors.grey} 
+            />
           </View>
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <TaskList 
+          {/* Task List */}
+          <TaskList
             tasks={dayData.tasks}
+            weeklyChallenge={dayData.weeklyChallenge}
             onTaskToggle={onTaskToggle}
+            onWeeklyChallengeToggle={onWeeklyChallengeToggle}
             day={dayData.day}
           />
-          
-          <ProgressPhotoGallery day={dayData.day} />
-          
-          {dayData.weeklyChallenge && (
-            <View style={styles.weeklyChallenge}>
-              <Text style={styles.weeklyChallengeTitle}>Weekly Challenge</Text>
-              <Text style={styles.weeklyChallengeText}>{dayData.weeklyChallenge}</Text>
-            </View>
-          )}
+
+          {/* Progress Photos */}
+          <View style={styles.photosSection}>
+            <Text style={styles.sectionTitle}>Progress Photos</Text>
+            <ProgressPhotoGallery day={dayData.day} />
+          </View>
         </ScrollView>
       </View>
     </Modal>
@@ -90,72 +100,60 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   closeButton: {
-    alignSelf: 'flex-end',
     padding: 8,
   },
   headerContent: {
+    flex: 1,
     alignItems: 'center',
-    marginTop: 10,
+    marginHorizontal: 16,
   },
   dayTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     color: colors.primary,
-    marginBottom: 8,
   },
   dateText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginBottom: 20,
-  },
-  progressContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  progressText: {
     fontSize: 14,
     color: colors.grey,
-    marginBottom: 8,
+    marginTop: 4,
   },
-  progressBar: {
-    width: '100%',
-    height: 8,
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 4,
-    overflow: 'hidden',
+  progressContainer: {
+    alignItems: 'center',
+    marginTop: 8,
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 4,
+  progressText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  pointsText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+    marginTop: 2,
+  },
+  statusIndicator: {
+    padding: 8,
   },
   content: {
     flex: 1,
   },
-  weeklyChallenge: {
-    margin: 20,
-    padding: 16,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.primary,
+  photosSection: {
+    marginTop: 20,
+    paddingHorizontal: 20,
   },
-  weeklyChallengeTitle: {
+  sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.primary,
-    marginBottom: 8,
-  },
-  weeklyChallengeText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    lineHeight: 24,
+    marginBottom: 12,
   },
 });

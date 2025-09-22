@@ -2,18 +2,20 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { colors } from '../styles/commonStyles';
-import { DailyTask } from '../types/challenge';
+import { DailyTask, WeeklyChallenge } from '../types/challenge';
 import Icon from './Icon';
 import { integrationService } from '../services/integrationService';
 import { photoService } from '../services/photoService';
 
 interface TaskListProps {
   tasks: DailyTask[];
+  weeklyChallenge?: WeeklyChallenge;
   onTaskToggle: (taskId: string, completed: boolean) => void;
+  onWeeklyChallengeToggle?: (completed: boolean) => void;
   day: number;
 }
 
-export default function TaskList({ tasks, onTaskToggle, day }: TaskListProps) {
+export default function TaskList({ tasks, weeklyChallenge, onTaskToggle, onWeeklyChallengeToggle, day }: TaskListProps) {
   const handleTaskPress = async (task: DailyTask) => {
     console.log('Task pressed:', task.id);
     
@@ -25,6 +27,12 @@ export default function TaskList({ tasks, onTaskToggle, day }: TaskListProps) {
       await handleStravaIntegration(task);
     } else {
       onTaskToggle(task.id, !task.completed);
+    }
+  };
+
+  const handleWeeklyChallengePress = () => {
+    if (weeklyChallenge && onWeeklyChallengeToggle) {
+      onWeeklyChallengeToggle(!weeklyChallenge.completed);
     }
   };
 
@@ -170,6 +178,7 @@ export default function TaskList({ tasks, onTaskToggle, day }: TaskListProps) {
     <View style={styles.container}>
       <Text style={styles.title}>Day {day} Tasks</Text>
       
+      {/* Daily Tasks */}
       {tasks.map((task) => (
         <TouchableOpacity
           key={task.id}
@@ -189,12 +198,17 @@ export default function TaskList({ tasks, onTaskToggle, day }: TaskListProps) {
             </View>
             
             <View style={styles.taskInfo}>
-              <Text style={[
-                styles.taskName,
-                task.completed && styles.completedText
-              ]}>
-                {task.name}
-              </Text>
+              <View style={styles.taskHeader}>
+                <Text style={[
+                  styles.taskName,
+                  task.completed && styles.completedText
+                ]}>
+                  {task.name}
+                </Text>
+                <Text style={styles.pointsBadge}>
+                  {task.points} pts
+                </Text>
+              </View>
               <Text style={styles.taskDescription}>
                 {task.description}
               </Text>
@@ -220,6 +234,59 @@ export default function TaskList({ tasks, onTaskToggle, day }: TaskListProps) {
           </View>
         </TouchableOpacity>
       ))}
+
+      {/* Weekly Challenge */}
+      {weeklyChallenge && (
+        <View style={styles.weeklySection}>
+          <Text style={styles.weeklySectionTitle}>Weekly Challenge</Text>
+          <TouchableOpacity
+            style={[
+              styles.taskCard,
+              styles.weeklyCard,
+              weeklyChallenge.completed && styles.completedTask
+            ]}
+            onPress={handleWeeklyChallengePress}
+          >
+            <View style={styles.taskContent}>
+              <View style={styles.taskIcon}>
+                <Icon 
+                  name="trophy" 
+                  size={24} 
+                  color={weeklyChallenge.completed ? colors.success : colors.primary} 
+                />
+              </View>
+              
+              <View style={styles.taskInfo}>
+                <View style={styles.taskHeader}>
+                  <Text style={[
+                    styles.taskName,
+                    weeklyChallenge.completed && styles.completedText
+                  ]}>
+                    {weeklyChallenge.name}
+                  </Text>
+                  <Text style={styles.pointsBadge}>
+                    {weeklyChallenge.points} pts
+                  </Text>
+                </View>
+                <Text style={styles.taskDescription}>
+                  {weeklyChallenge.description}
+                </Text>
+                <Text style={styles.weekBadge}>
+                  WEEK {weeklyChallenge.week}
+                </Text>
+              </View>
+              
+              <View style={styles.statusIcon}>
+                <Icon 
+                  name={weeklyChallenge.completed ? 'checkmark-circle' : 'ellipse-outline'} 
+                  size={28} 
+                  color={weeklyChallenge.completed ? colors.success : colors.grey} 
+                />
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -244,6 +311,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  weeklyCard: {
+    borderColor: colors.primary,
+    borderWidth: 2,
+  },
   completedTask: {
     backgroundColor: colors.backgroundAlt,
     borderColor: colors.success,
@@ -258,11 +329,17 @@ const styles = StyleSheet.create({
   taskInfo: {
     flex: 1,
   },
+  taskHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   taskName: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.textSecondary,
-    marginBottom: 4,
+    flex: 1,
   },
   completedText: {
     textDecorationLine: 'line-through',
@@ -273,6 +350,15 @@ const styles = StyleSheet.create({
     color: colors.grey,
     marginBottom: 4,
   },
+  pointsBadge: {
+    fontSize: 12,
+    color: colors.primary,
+    backgroundColor: colors.backgroundAlt,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    fontWeight: '600',
+  },
   appBadge: {
     fontSize: 12,
     color: colors.primary,
@@ -282,6 +368,17 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignSelf: 'flex-start',
     marginTop: 4,
+  },
+  weekBadge: {
+    fontSize: 12,
+    color: colors.primary,
+    backgroundColor: colors.backgroundAlt,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    fontWeight: '600',
   },
   cameraBadge: {
     fontSize: 12,
@@ -296,5 +393,15 @@ const styles = StyleSheet.create({
   },
   statusIcon: {
     marginLeft: 16,
+  },
+  weeklySection: {
+    marginTop: 20,
+  },
+  weeklySectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.primary,
+    marginBottom: 12,
+    textAlign: 'center',
   },
 });

@@ -6,14 +6,34 @@ export interface DailyTask {
   completed: boolean;
   icon: string;
   requiresApp?: 'yazio' | 'strava';
+  points: number;
+}
+
+export interface WeeklyChallenge {
+  id: string;
+  name: string;
+  description: string;
+  completed: boolean;
+  week: number;
+  points: number;
 }
 
 export interface DayProgress {
   day: number;
   date: string;
   tasks: DailyTask[];
+  weeklyChallenge?: WeeklyChallenge;
   allCompleted: boolean;
-  weeklyChallenge?: string;
+  totalPoints: number;
+}
+
+export interface AthleteScore {
+  athleteId: string;
+  athleteName: string;
+  totalScore: number;
+  completedTasks: number;
+  currentStreak: number;
+  lastUpdated: string;
 }
 
 export interface ChallengeData {
@@ -21,6 +41,9 @@ export interface ChallengeData {
   currentDay: number;
   days: DayProgress[];
   totalDays: 75;
+  totalScore: number;
+  athleteId: string;
+  athleteName: string;
 }
 
 export const DEFAULT_DAILY_TASKS: Omit<DailyTask, 'completed'>[] = [
@@ -29,6 +52,7 @@ export const DEFAULT_DAILY_TASKS: Omit<DailyTask, 'completed'>[] = [
     name: 'Progress Photo',
     description: 'Take a progress photo with your phone',
     icon: 'camera',
+    points: 10,
   },
   {
     id: 'water-intake',
@@ -36,6 +60,7 @@ export const DEFAULT_DAILY_TASKS: Omit<DailyTask, 'completed'>[] = [
     description: 'Track water intake via YAZIO',
     icon: 'water',
     requiresApp: 'yazio',
+    points: 10,
   },
   {
     id: 'healthy-diet',
@@ -43,6 +68,7 @@ export const DEFAULT_DAILY_TASKS: Omit<DailyTask, 'completed'>[] = [
     description: 'Follow healthy diet via YAZIO',
     icon: 'nutrition',
     requiresApp: 'yazio',
+    points: 10,
   },
   {
     id: 'workout',
@@ -50,12 +76,14 @@ export const DEFAULT_DAILY_TASKS: Omit<DailyTask, 'completed'>[] = [
     description: 'Complete workout tracked via STRAVA',
     icon: 'fitness',
     requiresApp: 'strava',
+    points: 10,
   },
   {
     id: 'no-alcohol',
     name: 'No Alcohol',
     description: 'Stay alcohol-free today',
     icon: 'close-circle',
+    points: 10,
   },
 ];
 
