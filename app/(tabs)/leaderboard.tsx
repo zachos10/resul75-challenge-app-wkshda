@@ -9,7 +9,6 @@ import { Athlete } from '../../types/athlete';
 import Icon from '../../components/Icon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const LEADERBOARD_KEY = 'resul75_leaderboard';
 const ATHLETES_KEY = 'resul75_athletes';
 
 export default function LeaderboardScreen() {
@@ -21,7 +20,7 @@ export default function LeaderboardScreen() {
     try {
       console.log('Loading leaderboard data');
       
-      // Load registered athletes
+      // Load registered athletes only
       const athletesData = await AsyncStorage.getItem(ATHLETES_KEY);
       const athletes: Athlete[] = athletesData ? JSON.parse(athletesData) : [];
       
@@ -37,62 +36,15 @@ export default function LeaderboardScreen() {
           lastUpdated: new Date().toISOString(),
         }));
 
-      // If no registered athletes, add some demo data
-      if (leaderboardData.length === 0) {
-        const demoAthletes = generateDemoLeaderboard();
-        leaderboardData.push(...demoAthletes);
-      }
-
-      // Add current user if not already in leaderboard and has challenge data
-      if (challengeData) {
-        const userIndex = leaderboardData.findIndex(
-          athlete => athlete.athleteId === challengeData.athleteId
-        );
-
-        const userScore: AthleteScore = {
-          athleteId: challengeData.athleteId,
-          athleteName: challengeData.athleteName,
-          totalScore: challengeData.totalScore,
-          completedTasks: challengeData.days.reduce((total, day) => {
-            const taskCount = day.tasks.filter(task => task.completed).length;
-            const weeklyCount = day.weeklyChallenge?.completed ? 1 : 0;
-            return total + taskCount + weeklyCount;
-          }, 0),
-          currentStreak: calculateCurrentStreak(challengeData.days, challengeData.currentDay),
-          lastUpdated: new Date().toISOString(),
-        };
-
-        if (userIndex >= 0) {
-          leaderboardData[userIndex] = userScore;
-        } else {
-          leaderboardData.push(userScore);
-        }
-      }
-
       // Sort by total score
       leaderboardData.sort((a, b) => b.totalScore - a.totalScore);
       
       setLeaderboard(leaderboardData);
+      console.log(`Loaded ${leaderboardData.length} athletes in leaderboard`);
     } catch (error) {
       console.error('Error loading leaderboard:', error);
-      setLeaderboard(generateDemoLeaderboard());
+      setLeaderboard([]);
     }
-  };
-
-  const generateDemoLeaderboard = (): AthleteScore[] => {
-    const demoAthletes = [
-      'Alex Johnson', 'Sarah Wilson', 'Mike Chen', 'Emma Davis', 'Chris Brown',
-      'Lisa Garcia', 'David Miller', 'Jessica Taylor', 'Ryan Anderson', 'Amanda White'
-    ];
-
-    return demoAthletes.map((name, index) => ({
-      athleteId: `demo_athlete_${index}`,
-      athleteName: name,
-      totalScore: Math.floor(Math.random() * 500) + 100,
-      completedTasks: Math.floor(Math.random() * 50) + 10,
-      currentStreak: Math.floor(Math.random() * 20) + 1,
-      lastUpdated: new Date().toISOString(),
-    }));
   };
 
   const calculateCurrentStreak = (days: any[], currentDay: number): number => {
@@ -173,82 +125,109 @@ export default function LeaderboardScreen() {
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Top 3 Podium */}
-        {leaderboard.length >= 3 && (
-          <View style={styles.podium}>
-            {/* Second Place */}
-            <View style={[styles.podiumPlace, styles.secondPlace]}>
-              <Text style={styles.podiumRank}>🥈</Text>
-              <Text style={styles.podiumName}>{leaderboard[1].athleteName}</Text>
-              <Text style={styles.podiumScore}>{leaderboard[1].totalScore}</Text>
-            </View>
-
-            {/* First Place */}
-            <View style={[styles.podiumPlace, styles.firstPlace]}>
-              <Text style={styles.podiumRank}>🥇</Text>
-              <Text style={styles.podiumName}>{leaderboard[0].athleteName}</Text>
-              <Text style={styles.podiumScore}>{leaderboard[0].totalScore}</Text>
-            </View>
-
-            {/* Third Place */}
-            <View style={[styles.podiumPlace, styles.thirdPlace]}>
-              <Text style={styles.podiumRank}>🥉</Text>
-              <Text style={styles.podiumName}>{leaderboard[2].athleteName}</Text>
-              <Text style={styles.podiumScore}>{leaderboard[2].totalScore}</Text>
-            </View>
+        {leaderboard.length === 0 ? (
+          // Empty State
+          <View style={styles.emptyState}>
+            <Icon name="trophy" size={80} color={colors.grey} />
+            <Text style={styles.emptyTitle}>No Athletes Yet</Text>
+            <Text style={styles.emptyText}>
+              Be the first to join the challenge! Sign up and start earning points to appear on the leaderboard.
+            </Text>
+            <TouchableOpacity
+              style={styles.joinButton}
+              onPress={() => {
+                // Navigate to signup if not signed in
+                console.log('Navigate to signup');
+              }}
+            >
+              <Text style={styles.joinButtonText}>Join the Challenge</Text>
+            </TouchableOpacity>
           </View>
-        )}
-
-        {/* Full Leaderboard */}
-        <View style={styles.leaderboardList}>
-          <Text style={styles.sectionTitle}>Full Rankings</Text>
-          {leaderboard.map((athlete, index) => {
-            const rank = index + 1;
-            const isCurrentUser = challengeData?.athleteId === athlete.athleteId;
-            
-            return (
-              <View 
-                key={athlete.athleteId} 
-                style={[
-                  styles.athleteCard,
-                  isCurrentUser && styles.currentUserCard
-                ]}
-              >
-                <View style={styles.rankContainer}>
-                  <Text style={[styles.rankText, { color: getRankColor(rank) }]}>
-                    {getRankIcon(rank)}
-                  </Text>
+        ) : (
+          <>
+            {/* Top 3 Podium */}
+            {leaderboard.length >= 3 && (
+              <View style={styles.podium}>
+                {/* Second Place */}
+                <View style={[styles.podiumPlace, styles.secondPlace]}>
+                  <Text style={styles.podiumRank}>🥈</Text>
+                  <Text style={styles.podiumName}>{leaderboard[1].athleteName}</Text>
+                  <Text style={styles.podiumScore}>{leaderboard[1].totalScore}</Text>
                 </View>
 
-                <View style={styles.athleteInfo}>
-                  <Text style={[
-                    styles.athleteName,
-                    isCurrentUser && styles.currentUserText
-                  ]}>
-                    {athlete.athleteName}
-                    {isCurrentUser && ' (You)'}
-                  </Text>
-                  <View style={styles.athleteStats}>
-                    <Text style={styles.statText}>
-                      {athlete.completedTasks} tasks • {athlete.currentStreak} day streak
-                    </Text>
-                  </View>
+                {/* First Place */}
+                <View style={[styles.podiumPlace, styles.firstPlace]}>
+                  <Text style={styles.podiumRank}>🥇</Text>
+                  <Text style={styles.podiumName}>{leaderboard[0].athleteName}</Text>
+                  <Text style={styles.podiumScore}>{leaderboard[0].totalScore}</Text>
                 </View>
 
-                <View style={styles.scoreContainer}>
-                  <Text style={styles.scoreText}>{athlete.totalScore}</Text>
-                  <Text style={styles.scoreLabel}>points</Text>
+                {/* Third Place */}
+                <View style={[styles.podiumPlace, styles.thirdPlace]}>
+                  <Text style={styles.podiumRank}>🥉</Text>
+                  <Text style={styles.podiumName}>{leaderboard[2].athleteName}</Text>
+                  <Text style={styles.podiumScore}>{leaderboard[2].totalScore}</Text>
                 </View>
               </View>
-            );
-          })}
-        </View>
+            )}
+
+            {/* Full Leaderboard */}
+            <View style={styles.leaderboardList}>
+              <Text style={styles.sectionTitle}>
+                Rankings ({leaderboard.length} Athletes)
+              </Text>
+              {leaderboard.map((athlete, index) => {
+                const rank = index + 1;
+                const isCurrentUser = challengeData?.athleteId === athlete.athleteId;
+                
+                return (
+                  <View 
+                    key={athlete.athleteId} 
+                    style={[
+                      styles.athleteCard,
+                      isCurrentUser && styles.currentUserCard
+                    ]}
+                  >
+                    <View style={styles.rankContainer}>
+                      <Text style={[styles.rankText, { color: getRankColor(rank) }]}>
+                        {getRankIcon(rank)}
+                      </Text>
+                    </View>
+
+                    <View style={styles.athleteInfo}>
+                      <Text style={[
+                        styles.athleteName,
+                        isCurrentUser && styles.currentUserText
+                      ]}>
+                        {athlete.athleteName}
+                        {isCurrentUser && ' (You)'}
+                      </Text>
+                      <View style={styles.athleteStats}>
+                        <Text style={styles.statText}>
+                          {athlete.completedTasks} tasks • {athlete.currentStreak} day streak
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.scoreContainer}>
+                      <Text style={styles.scoreText}>{athlete.totalScore}</Text>
+                      <Text style={styles.scoreLabel}>points</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </>
+        )}
 
         {/* Info Card */}
         <View style={styles.infoCard}>
           <Icon name="information-circle" size={24} color={colors.primary} />
           <Text style={styles.infoText}>
-            Earn 10 points for each completed task. Rankings update in real-time as athletes complete their challenges!
+            {leaderboard.length > 0 
+              ? 'Earn 10 points for each completed task. Rankings update in real-time as athletes complete their challenges!'
+              : 'The leaderboard will show all registered athletes and their progress. Sign up to join the competition!'
+            }
           </Text>
         </View>
       </ScrollView>
@@ -283,6 +262,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
     fontWeight: '600',
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.primary,
+    marginTop: 20,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 30,
+  },
+  joinButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+  },
+  joinButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.background,
   },
   podium: {
     flexDirection: 'row',

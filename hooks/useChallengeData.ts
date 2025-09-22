@@ -255,7 +255,9 @@ export const useChallengeData = () => {
           };
 
           await AsyncStorage.setItem(ATHLETES_KEY, JSON.stringify(athletes));
-          console.log('Updated athlete score in leaderboard');
+          console.log('Updated athlete score in leaderboard:', athletes[athleteIndex].name, challengeData.totalScore);
+        } else {
+          console.log('Athlete not found in leaderboard, may need to sign up');
         }
       }
     } catch (error) {
